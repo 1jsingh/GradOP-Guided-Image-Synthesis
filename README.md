@@ -27,7 +27,6 @@ Official implementation of our CVPR 2023 paper with streamlit demo. By modelling
 <!-- https://user-images.githubusercontent.com/25987491/185323657-a71c239c-892c-4202-b753-a84c0bf19a30.mp4 -->
 
 ## Table of Contents
-- [High-Fidelity Guided Image Synthesis with Latent Diffusion Models (CVPR 2023)](#high-fidelity-guided-image-synthesis-with-latent-diffusion-models--cvpr-2023-)
   * [Description](#description)
   * [Getting Started](#getting-started)
     + [Prerequisites](#prerequisites)
@@ -121,10 +120,9 @@ As the number of gradient steps for GradOP+ optimization increase (left to right
 ### More Results
 
 <p align="center">
-<img src="docs/watercolor-synthesis.png" width="800px"/>  
-<img src="./docs/gradop/sample-results-ours-p3.png" width="800px"/>
-<img src="./docs/gradop/sample-results-ours-p2.png" width="800px"/>
-<img src="./docs/gradop/sample-results-ours-v3.png" width="800px"/>
+<img src="./docs/sample-results-ours-p3.png" width="800px"/>
+<img src="./docs/sample-results-ours-p2.png" width="800px"/>
+<img src="./docs/sample-results-ours-v3.png" width="800px"/>
 <br>
 Our approach allows the user to easily generate realistic image outputs across a range of data modalities.
 </p>
