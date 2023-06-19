@@ -12,7 +12,7 @@
 <!-- <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fgithub.com%2F1jsingh%2Fpaint2pix&text=Unleash%20your%20inner%20artist%20...%20synthesize%20amazing%20artwork%2C%20and%20realistic%20image%20content%20or%20simply%20perform%20a%20range%20of%20diverse%20real%20image%20edits%20using%20just%20coarse%20user%20scribbles.&hashtags=Paint2Pix%2CECCV2022"><img src="https://img.shields.io/badge/Share--white?style=for-the-badge&logo=Twitter" height=22.5></a> -->
 
 <p align="center">
-<img src="https://1jsingh.github.io/docs/gradop/overview-v3.png" width="800px"/>  
+<img src="https://1jsingh.github.io/docs/gradop/overview-final-v1.png" width="800px"/>  
 <br>
 We propose a novel stroke based guided image synthesis framework which (Left) resolves the intrinsic domain shift problem in prior works (b), wherein the final images lack details and often resemble simplistic representations of the target domain (e) (generated using only text-conditioning). Iteratively reperforming the guided synthesis with the generated outputs (c) seems to improve realism but it is expensive and the generated outputs tend to lose faithfulness with the reference (a) with each iteration. (Right) Additionally, the user is also able to specify the semantics of different painted regions without requiring any additional training or finetuning.
 </p>
@@ -26,22 +26,20 @@ Official implementation of our CVPR 2023 paper with streamlit demo. By modelling
 
 <!-- https://user-images.githubusercontent.com/25987491/185323657-a71c239c-892c-4202-b753-a84c0bf19a30.mp4 -->
 
-
 ## Table of Contents
-- [Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-- [Pretrained Models](#pretrained-models)
-  * [Paint2pix models](#paint2pix-models)
-- [Using the Demo](#using-the-demo)
-- [Example Results](#example-results)
-  * [Progressive Image Synthesis](#progressive-image-synthesis)
-  * [Real Image Editing](#real-image-editing)
-  * [Artistic Content Generation](#artistic-content-generation)
-- [Acknowledgments](#acknowledgments)
-- [Citation](#citation)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+- [High-Fidelity Guided Image Synthesis with Latent Diffusion Models (CVPR 2023)](#high-fidelity-guided-image-synthesis-with-latent-diffusion-models--cvpr-2023-)
+  * [Description](#description)
+  * [Getting Started](#getting-started)
+    + [Prerequisites](#prerequisites)
+    + [Setup](#setup)
+    + [Hugging Face Diffusers Library (Stable Diffusion)](#hugging-face-diffusers-library--stable-diffusion-)
+  * [Usage](#usage)
+  * [Example Results](#example-results)
+    + [Stroke Guided Image Synthesis](#stroke-guided-image-synthesis)
+    + [Visualizing the Optimization Process.](#visualizing-the-optimization-process)
+    + [More Results](#more-results)
+  * [Acknowledgments](#acknowledgments)
+  * [Citation](#citation)
 
 
 
@@ -50,75 +48,89 @@ Official implementation of our CVPR 2023 paper with streamlit demo. By modelling
 - Linux or macOS
 - NVIDIA GPU + CUDA CuDNN (CPU may be possible with some modifications, but is not inherently supported)
 - Python 3
-- Tested on Ubuntu 20.04, Nvidia RTX 3090 and CUDA 11.5
+- Tested on Ubuntu 20.04, Nvidia RTX 3090 and CUDA 11.5 (though will likely run on other setups without modification)
 
-### Installation
+### Setup
 - Dependencies:  
-We recommend running this repository using [Anaconda](https://docs.anaconda.com/anaconda/install/). 
-All dependencies for defining the environment are provided in `environment/paint2pix_env.yaml`.
-
-## Pretrained Models
-Please download the following pretrained models essential for running the provided demo.
-
-### Paint2pix models
-| Path | Description
-| :--- | :----------
-|[Canvas Encoder - ReStyle](https://drive.google.com/file/d/1ufKEtDXEG6o96KjLh-i6EL7Ir9TlwPcs/view?usp=sharing)  | Paint2pix Canvas Encoder trained with a ReStyle architecture.
-|[Identity Encoder - ReStyle](https://drive.google.com/file/d/1KT3YmSHgMJM3b7Ox9zciyo3FSELtJsyS/view?usp=sharing)  | Paint2pix Identity Encoder trained with a ReStyle architecture.
-|[StyleGAN - Watercolor Painting](https://drive.google.com/file/d/1WW_a589lv7R9-PNvKlVkVxITIZnW7xlv/view?usp=sharing)  | StyleGAN decoder network trained to generate watercolor paintings. Used for artistic content generation with paint2pix.
-|[IR-SE50 Model](https://drive.google.com/file/d/1U4q_o20uGMozSetOkMGddUcAWf_ons2-/view?usp=sharing) | Pretrained IR-SE50 model taken from [TreB1eN](https://github.com/TreB1eN/InsightFace_Pytorch) for use in ID loss and id-encoder training.
-
-
-Please download and save the above models to the directory `pretrained_models`. 
-
-
-## Using the Demo
-
-We provide a streamlit-drawble canvas based demo for trying out different features of the Paint2pix model. To start the demo use,
-
+Our code builds on the requirement of the official Stable Diffusion repository. To set up the environment, please run:
 ```
-CUDA_VISIBLE_DEVICES=2 streamlit run demo.py --server.port 6009
+conda env create -f environment/environment.yaml
+conda activate gradop-guided-synthesis
 ```
 
-The demo can then be accessed on the local machine or ssh client via [localhost](http://localhost:6009).
+### Hugging Face Diffusers Library (Stable Diffusion)
+Our code uses the Hugging Face [diffusers](https://github.com/huggingface/diffusers) library for downloading the Stable Diffusion v1.4 text-to-image model.
 
-The demo has been divided into 3 convenient sections:
-    
-1. **Real Image Editing**: Allows the user to edit real images using coarse user scribbles
-2. **Progressive Image Synthesis**: Start from an empty canvas and design your desired image output using just coarse scribbles.
-3. **Artistic Content Generation**: Unleash your inner artist! create highly artistic portraits using just coarse scribbles.
+## Usage
 
+The GradOP Stroke2Img is provided in a convenient diffusers-based pipeline for easy use:
+
+* First load the pipeline with Stable Diffusion Weights
+```
+from pipeline_gradop_stroke2img import GradOPStroke2ImgPipeline
+pipeline = GradOPStroke2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4",torch_dtype=torch.float32)
+```
+
+* Load user scribble image and perform inference using GradOP+
+```
+# define the guidance inputs: 1) text prompt and 2) guidance image containing coarse scribbles
+seed = 0
+prompt = "a photo of a fox beside a tree"
+stroke_img = Image.open('./input-images/fox.png').convert('RGB').resize((512,512))
+
+# perform img2img guided synthesis using gradop+
+generator = torch.Generator(device=device).manual_seed(seed)
+out = pipeline.gradop_plus_stroke2img(prompt, stroke_img, strength=0.8, num_iterative_steps=3, grad_steps_per_iter=12, generator=generator)
+```
+
+Notes:
+
+* You can also compare the performance for same seed with standard (SDEdit-based) diffusers img2img predictions using,
+```
+# perform img2img guided synthesis using sdedit
+generator = torch.Generator(device=device).manual_seed(seed)
+out = pipeline.sdedit_img2img(prompt=prompt, image=stroke_img, generator=generator)
+```
+
+* Similarly, visualization of the target data subspace (images conditioned only on the text prompt) can be done as follows,
+```
+prompt = "a photo of a fox beside a tree"
+text_conditioned_outputs = pipeline.text2img_prediction(prompt, num_images_per_prompt=4).images
+``` 
 
 ## Example Results
 
-### Progressive Image Synthesis
+### Stroke Guided Image Synthesis
 
 <p align="center">
-<img src="docs/prog-synthesis.png" width="800px"/>  
+<img src="https://1jsingh.github.io/docs/gradop/sdedit-var-p4-v3.png" width="800px"/>  
+<img src="https://1jsingh.github.io/docs/gradop/sdedit-var-p7.png" width="800px"/>  
 <br>
-Paint2pix for progressive image synthesis
+As compared to prior works, our method provides a more practical approach for improving output realism (with respect to the target domain) while still maintaining the faithfulness with the reference painting.
 </p>
 
-### Real Image Editing
+### Visualizing the Optimization Process.
+A key component of the proposed GradOP/GradOP+ solution, is to model the guided image synthesis problem as a constrained optimization problem and solve the same approximately using simple gradient descent. Here, we visualize the variation in output performance as the number of gradient descent steps are increased.
 
 <p align="center">
-<img src="docs/custom-color-edits.png" width="800px"/>  
+<img src="https://1jsingh.github.io/docs/gradop/ngrad-var-final-v1.png" width="800px"/>  
 <br>
-Paint2pix for achieving diverse custom real-image edits
+As the number of gradient steps for GradOP+ optimization increase (left to right) the output converges to more and more faithful (yet realistic) representation of the input reference painting / scribbles.
 </p>
 
-### Artistic Content Generation
-
+### More Results
 
 <p align="center">
 <img src="docs/watercolor-synthesis.png" width="800px"/>  
+<img src="./docs/gradop/sample-results-ours-p3.png" width="800px"/>
+<img src="./docs/gradop/sample-results-ours-p2.png" width="800px"/>
+<img src="./docs/gradop/sample-results-ours-v3.png" width="800px"/>
 <br>
-Paint2pix for generating highly artistic content using coarse scribbles
+Our approach allows the user to easily generate realistic image outputs across a range of data modalities.
 </p>
 
 ## Acknowledgments
-This code borrows heavily from [pixel2style2pixel](https://github.com/eladrich/pixel2style2pixel), 
-[encoder4editing](https://github.com/omertov/encoder4editing) and [restyle-encoder](https://github.com/yuval-alaluf/restyle-encoder). 
+This code is builds on the code from the img2img stable diffusion pipeline from the [diffusers](https://github.com/huggingface/diffusers) library. 
 
 ## Citation
 If you use this code for your research, please consider citing:
