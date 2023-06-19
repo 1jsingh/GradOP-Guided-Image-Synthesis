@@ -65,13 +65,13 @@ Our code uses the Hugging Face [diffusers](https://github.com/huggingface/diffus
 The GradOP Stroke2Img is provided in a convenient diffusers-based pipeline for easy use:
 
 * First load the pipeline with Stable Diffusion Weights
-```
+``` python
 from pipeline_gradop_stroke2img import GradOPStroke2ImgPipeline
 pipeline = GradOPStroke2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4",torch_dtype=torch.float32)
 ```
 
 * Load user-scribbles image and perform inference using GradOP+
-```
+``` python
 # define the guidance inputs: 1) text prompt and 2) guidance image containing coarse scribbles
 seed = 0
 prompt = "a photo of a fox beside a tree"
@@ -85,13 +85,13 @@ out = pipeline.gradop_plus_stroke2img(prompt, stroke_img, strength=0.8, num_iter
 Notes:
 
 * You can also compare the performance for same seed with standard (SDEdit-based) diffusers img2img predictions using,
-```
+``` python
 generator = torch.Generator(device=device).manual_seed(seed)
 out = pipeline.sdedit_img2img(prompt=prompt, image=stroke_img, generator=generator)
 ```
 
 * Similarly, visualization of the target data subspace (images conditioned only on the text prompt) can be done as follows,
-```
+``` python
 prompt = "a photo of a fox beside a tree"
 text_conditioned_outputs = pipeline.text2img_prediction(prompt, num_images_per_prompt=4).images
 ``` 
