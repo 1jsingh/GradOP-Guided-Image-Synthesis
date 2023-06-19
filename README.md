@@ -12,7 +12,7 @@
 <!-- <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fgithub.com%2F1jsingh%2Fpaint2pix&text=Unleash%20your%20inner%20artist%20...%20synthesize%20amazing%20artwork%2C%20and%20realistic%20image%20content%20or%20simply%20perform%20a%20range%20of%20diverse%20real%20image%20edits%20using%20just%20coarse%20user%20scribbles.&hashtags=Paint2Pix%2CECCV2022"><img src="https://img.shields.io/badge/Share--white?style=for-the-badge&logo=Twitter" height=22.5></a> -->
 
 <p align="center">
-<img src="./docs/gradop/overview-final-v1.jpg" width="800px"/>  
+<img src="./docs/overview-final-v1.jpg" width="800px"/>  
 <br>
 We propose a novel stroke based guided image synthesis framework which (Left) resolves the intrinsic domain shift problem in prior works (b), wherein the final images lack details and often resemble simplistic representations of the target domain (e) (generated using only text-conditioning). Iteratively reperforming the guided synthesis with the generated outputs (c) seems to improve realism but it is expensive and the generated outputs tend to lose faithfulness with the reference (a) with each iteration. (Right) Additionally, the user is also able to specify the semantics of different painted regions without requiring any additional training or finetuning.
 </p>
@@ -111,7 +111,7 @@ As compared to prior works, our method provides a more practical approach for im
 A key component of the proposed GradOP/GradOP+ solution, is to model the guided image synthesis problem as a constrained optimization problem and solve the same approximately using simple gradient descent. Here, we visualize the variation in output performance as the number of gradient descent steps are increased.
 
 <p align="center">
-<img src="./docs/gradop/ngrad-var-final-v1.jpg" width="800px"/>  
+<img src="./docs/ngrad-var-final-v1.jpg" width="800px"/>  
 <br>
 As the number of gradient steps for GradOP+ optimization increase (left to right) the output converges to more and more faithful (yet realistic) representation of the input reference painting / scribbles.
 </p>
