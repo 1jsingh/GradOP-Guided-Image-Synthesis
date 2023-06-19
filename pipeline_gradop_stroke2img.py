@@ -23,9 +23,18 @@ from diffusers.utils import (
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
+from diffusers import LMSDiscreteScheduler, DDIMScheduler, PNDMScheduler
+import kornia as K
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import transforms, utils
+from PIL import Image, ImageFilter 
+
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
-
 EXAMPLE_DOC_STRING = """ """
 
 
@@ -50,7 +59,7 @@ def preprocess(image):
     return image
 
 
-class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
+class GradOPStroke2ImgPipeline(DiffusionPipeline):
     r"""
     Pipeline for text-guided image to image generation using Stable Diffusion.
 
@@ -92,6 +101,9 @@ class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
         requires_safety_checker: bool = True,
     ):
         super().__init__()
+
+        # use a DDIM scheduler by default
+        scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
 
         if hasattr(scheduler.config, "steps_offset") and scheduler.config.steps_offset != 1:
             deprecation_message = (
@@ -530,54 +542,30 @@ class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
     
     @torch.enable_grad()
     def gradop_plus_optim(self,latents,target,lr,num_grad_steps,verbose=False):
+        def painting_function(img):
+            """
+                While more accurate approximations for the painting function (Median Filter + Palette Quantization) helps generate better results, 
+                we find the modelling the painting function as a simple convolution with a Gaussian kernel gives best results in terms of output inference time.
+            """
+            k = 35
+            sigma = 7
+            out = K.filters.gaussian_blur2d(img, (k,k),(sigma,sigma))
+            return out
+            
         out_latent = torch.tensor(latents.clone().detach(),requires_grad=True, dtype=self.vae.dtype)
         optm = optim.Adam([out_latent],lr=lr)
         criterion = nn.MSELoss()
         for i in range(num_grad_steps):
             out, = self.vae.decode(out_latent / 0.18215, return_dict=False)
             out = torch.clamp((out + 1.0) / 2.0, min=0.0, max=1.0)    
-            out_pred = im2sketch(out)
+            out_pred = painting_function(out)
             loss = criterion(out_pred,target)
             optm.zero_grad()
             loss.backward()
             optm.step()
             if i % 10 == 0 and verbose:
                 print ("Iteration: {}/{}\t loss: {:.4f}".format(i+1,num_grad_steps,loss.item()))
-                plt.imshow(out.detach().cpu().float().numpy()[0].transpose(1,2,0))
-                plt.axis(False)
-                plt.show()
         return out_latent.detach()
-    
-    def compute_stroke2img_target(self,):
-        """
-        Prepares target for GradOP/GradOP+ optimization
-        """
-        # guided synthesis inputs
-        # prompt = "a photo of a red tiger in a field"
-        init_image = stroke_img.copy()
-        init_image_ = stroke_img.copy()
-
-        width = height = 512
-        init_image = init_image.resize((width, height), resample=Image.Resampling.LANCZOS)
-        init_image = np.array(init_image).astype(np.float32) / 255.0 * 2.0 - 1.0
-        init_image = torch.from_numpy(init_image[np.newaxis, ...].transpose(0, 3, 1, 2)).to(device)
-
-        x_ = ((init_image+1)/2.).cpu()
-
-        plt.imshow(x_[0].cpu().numpy().transpose(1,2,0))
-        plt.axis(False)
-        plt.show()
-
-        target = x_
-        target = target.detach().to(device)
-        print (target.requires_grad)
-
-        plt.imshow(target[0].cpu().numpy().transpose(1,2,0))
-        plt.axis(False)
-        plt.show()
-
-        target = target.type(custom_pipeline.vae.dtype)
-        return target
 
     def text2img_prediction(self,prompt, num_images_per_prompt=1,generator=None, return_latents=False):
         """
@@ -591,15 +579,8 @@ class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
         """
         Compute SDEdit based standard Img2Img Prediction
         """
-        out = self(prompt=prompt, num_images_per_prompt=1, image=stroke_img, strength=strength, generator=generator).images[0]
+        out = self(prompt=prompt, num_images_per_prompt=1, image=image, strength=strength, generator=generator).images[0]
         return out
-    
-        
-    def gradop_stroke2img(self, prompt, image, strength=0.8, num_grad_steps=50, gamma=1e-3, generator=None):
-        """
-        Compute GradOP based Stroke to Image Prediction
-        """
-        pass
     
     
     def gradop_plus_stroke2img(self, prompt, image, strength=0.8, num_iterative_steps=3, grad_steps_per_iter=12, generator=None):
@@ -608,7 +589,7 @@ class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
         """
         # prepare optimization target from the stroke image
         width = height = 512
-        init_image = stroke_img.resize((width,height)).copy()
+        init_image = image.resize((width,height)).copy()
         target = preprocess(image)
         target = (target+1)/2.
         target = target.detach().to(self.device)
@@ -782,7 +763,7 @@ class StableDiffusionStroke2ImgPipeline(DiffusionPipeline):
                 if gradop_plus and i < threshold + igrad_start and i >= igrad_start and i < len(timesteps)-1 and target is not None:
                     latents = self.gradop_plus_optim(latents,target,lr,num_grad_steps,verbose=False)
                     if True:
-                        t_enc = scheduler.timesteps[-(init_timestep-i-1)]#steps - int(steps * (init_image_strength - decoding_offset)) + (i+1)
+                        t_enc = self.scheduler.timesteps[-(init_timestep-i-1)]#steps - int(steps * (init_image_strength - decoding_offset)) + (i+1)
                         t_enc = torch.tensor([t_enc] * batch_size * num_images_per_prompt, device=device)
                         # print (i,t_start, t_enc, t_index)
                         noise = torch.randn(latents.shape, generator=generator, device=device)
