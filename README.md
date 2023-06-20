@@ -20,11 +20,13 @@ We propose a novel stroke based guided image synthesis framework which (Left) re
 ## Description   
 Official implementation of our CVPR 2023 paper with streamlit demo. By modelling the guided image synthesis output as the solution of a constrained optimization problem, we improve output realism <em>w.r.t</em> the target domain (e.g. realistic photos) when performing guided image synthesis from coarse user scribbles.
 
-<!-- ## Updates
+## Updates
 
-* **(10/06/23)** Our [project demo](http://exposition.cecs.anu.edu.au:6009/) is online. Try performing realistic image synthesis right from your browser!  -->
+* **(20/06/23)** Our project code and [demo](http://exposition.cecs.anu.edu.au:6009/) are online. Try performing realistic stroke-to-image synthesis right from your browser! 
 
-<!-- https://user-images.githubusercontent.com/25987491/185323657-a71c239c-892c-4202-b753-a84c0bf19a30.mp4 -->
+https://github.com/1jsingh/GradOP-Guided-Image-Synthesis/assets/25987491/1549da28-e45b-4fab-a198-71508b237e4d
+
+
 
 ## Table of Contents
   * [Description](#description)
