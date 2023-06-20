@@ -18,7 +18,7 @@ We propose a novel stroke based guided image synthesis framework which (Left) re
 </p>
 
 ## Description   
-Official implementation of our CVPR 2023 paper with streamlit demo. By modelling the guided image synthesis output as the solution of a constrained optimization problem, we imporve output realism <em>w.r.t</em> the target domain (e.g. realistic photos) when performing guided image synthesis from coarse user scribbles.
+Official implementation of our CVPR 2023 paper with streamlit demo. By modelling the guided image synthesis output as the solution of a constrained optimization problem, we improve output realism <em>w.r.t</em> the target domain (e.g. realistic photos) when performing guided image synthesis from coarse user scribbles.
 
 <!-- ## Updates
 
@@ -62,7 +62,9 @@ Our code uses the Hugging Face [diffusers](https://github.com/huggingface/diffus
 
 ## Usage
 
-The GradOP Stroke2Img is provided in a convenient diffusers-based pipeline for easy use:
+### General
+
+The GradOP+ model is provided in a simple [diffusers](https://github.com/huggingface/diffusers) pipeline for easy use:
 
 * First load the pipeline with Stable Diffusion Weights
 ``` python
@@ -70,7 +72,7 @@ from pipeline_gradop_stroke2img import GradOPStroke2ImgPipeline
 pipeline = GradOPStroke2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4",torch_dtype=torch.float32)
 ```
 
-* Load user-scribbles image and perform inference using GradOP+
+* Simply load user-scribbles image and perform inference using GradOP+
 ``` python
 # define the guidance inputs: 1) text prompt and 2) guidance image containing coarse scribbles
 seed = 0
@@ -84,7 +86,9 @@ out = pipeline.gradop_plus_stroke2img(prompt, stroke_img, strength=0.8, num_iter
 
 Notes:
 
-* You can also compare the performance for same seed with standard (SDEdit-based) diffusers img2img predictions using,
+* Increase the number of `grad_steps_per_iter` (8-16) for improving faithfulness with the input reference.
+* Increasing the `num_iterative_steps` between 3-5 can also help with the same.
+* We can also compare the performance with standard (SDEdit-based) diffusers img2img predictions for same seed,
 ``` python
 generator = torch.Generator(device=device).manual_seed(seed)
 out = pipeline.sdedit_img2img(prompt=prompt, image=stroke_img, generator=generator)
@@ -95,6 +99,33 @@ out = pipeline.sdedit_img2img(prompt=prompt, image=stroke_img, generator=generat
 prompt = "a photo of a fox beside a tree"
 text_conditioned_outputs = pipeline.text2img_prediction(prompt, num_images_per_prompt=4).images
 ``` 
+
+### Script
+
+To generate an image, you can also simply run `run.py` script. For example,
+``` bash
+python run.py --img_path ./input-images/fox.png --prompt "a photo of a fox beside a tree" --seed 0 --num_iterative_steps=3 --grad_steps_per_iter=12
+```
+
+Notes:
+
+* Increase the number of `--grad_steps_per_iter` (8-16) for improving faithfulness with the input reference.
+* Increasing the `--num_iterative_steps` between 2-5 can also help with the same.
+* For generating baseline images with standard (SDEdit-based) diffusers img2img prediction use `--method=sdedit` option as,
+
+``` bash
+python run.py --method sdedit --img_path ./input-images/fox.png --prompt "a photo of a fox beside a tree" --strength=0.8 --seed 0 
+```
+
+### Notebooks
+
+We also provide a demo Jupyter notebook for detailed analysis and comparison with prior SDEdit based guided synthesis. Please see `notebooks/demo-gradop.ipynb`
+for step-by-step analysis including:
+
+* Comparison with SDEdit under changing hyperparameter
+* Additional results across diverse data modalities (e.g. realistic photos, anime scenes etc.)
+* Visualization of GradOP+ outputs under changing number of gradient descent steps.
+
 
 ## Example Results
 
