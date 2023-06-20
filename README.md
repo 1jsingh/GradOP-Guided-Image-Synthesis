@@ -24,8 +24,7 @@ Official implementation of our CVPR 2023 paper with streamlit demo. By modelling
 
 * **(20/06/23)** Our project code and [demo](http://exposition.cecs.anu.edu.au:6009/) are online. Try performing realistic stroke-to-image synthesis right from your browser! 
 
-https://github.com/1jsingh/GradOP-Guided-Image-Synthesis/assets/25987491/1549da28-e45b-4fab-a198-71508b237e4d
-
+https://github.com/1jsingh/GradOP-Guided-Image-Synthesis/assets/25987491/3482a632-26c3-4e93-9bb5-1a51415f7843
 
 
 ## Table of Contents
